@@ -14,6 +14,9 @@ def test_app():
     expected = {"method": "get_balances", "status": "Success", "result": "bob has 100.0 EUR available"}
     asyncio.get_event_loop().run_until_complete(call_ws(data, expected))
 
+    data = {"method": "deposit", "date": "2018-10-09", "account": "alice", "amt" : 100, "ccy": "EUR"}
+    asyncio.get_event_loop().run_until_complete(call_ws(data))
+
     # Withdraw test
     data = {"method": "withdrawal", "date": "2018-10-09", "account": "bob", "amt" : 100, "ccy": "EUR"}
     expected = {"method": "withdrawal", "status": "Success", "result": "bob withdrew 100 EUR"}
@@ -28,13 +31,6 @@ def test_app():
     asyncio.get_event_loop().run_until_complete(call_ws(data))
     data = {"method": "withdrawal", "date": "2018-10-09", "account": "bob", "amt" : 110, "ccy": "EUR"}
     expected = {"method": "withdrawal", "status": "Fail", "result": "bob has insufficient funds to withdraw 110 EUR"}
-    asyncio.get_event_loop().run_until_complete(call_ws(data, expected))
-
-    # Valid transfer
-    data = {"method": "deposit", "date": "2018-10-09", "account": "alice", "amt" : 100, "ccy": "EUR"}
-    asyncio.get_event_loop().run_until_complete(call_ws(data))
-    data = {"method": "transfer", "date": "2018-10-09", "to_account": "alice", "from_account": "bob", "amt" : 100, "ccy": "GBP"}
-    expected = {"method": "transfer", "status": "Success", "result": "bob has transfered funds to alice"}
     asyncio.get_event_loop().run_until_complete(call_ws(data, expected))
 
     # Invalid transfer(limit hit in 5 days)

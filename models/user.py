@@ -9,49 +9,56 @@ from itertools   import groupby
 class User:
     name:         str
     history:      dict  = field(default_factory = lambda: {'deposit': [], 'withdrawal': [],
-                                                           'transfer': [Transfer(datetime.utcnow().strftime('%Y-%m-%d'), 0.0, 'open_acct'),
-                                                                        Transfer(datetime.utcnow().strftime('%Y-%m-%d'), 0.0, 'open_acct')],
+                                                           'transfer': [],
                                                            'balance': []})
     money_limit:  int   = 10000
     period_limit: int   = 5
     balance:      float = 0.0
     logger = logging.getLogger('User')
 
-    def is_transfer_within_limit(self, amount) -> bool:
+    def is_transfer_within_limit(self, amount, date) -> bool:
         current_withdraw = []
         today = datetime.utcnow().strftime('%Y-%m-%d')
         today = datetime.strptime(today, '%Y-%m-%d')
         limit_range_days = sorted([ f'{today - timedelta(day)}'[:10] for day in range(self.period_limit) ])
-        self.logger.info(limit_range_days)
 
-        sorted_transfers        = sorted(self.history['transfer'], key = lambda x: x.date)
-        self.logger.info('Sorted transfers: {}'.format(sorted_transfers))
-        grouped_transfers       = groupby(sorted_transfers, key = lambda x: x.date)
-        self.logger.info('Grouped transfers: {}'.format(grouped_transfers))
-        grouped_transfers       = [ tmp for tmp in grouped_transfers ]
-        self.logger.info('Grouped transfers(list): {}'.format(grouped_transfers))
-        recent_transfers_groups = grouped_transfers[-5:]
-        self.logger.info('Recent transfers_groups: {}'.format(recent_transfers_groups))
-        recent_groups_date      = [ tmp[0] for tmp in recent_transfers_groups ]
-        self.logger.info('Dates of recent transfers groups: {}'.format(recent_groups_date))
-        self.logger.info('Limit to dates: {}'.format(limit_range_days))
+        transfers  = self.history['transfer']
+        grouped_transfers = groupby(transfers, key = lambda x: x.date)
+        grouped_dict      = dict()
+        for tmp in grouped_transfers:
+            grouped_dict[tmp[0]] = [ t for t in tmp[1] ]
 
-        if recent_groups_date == limit_range_days:
-            self.logger.info(recent_transfers_groups)
-            for lol in recent_transfers_groups:
-                self.logger.info('Lol: {}'.format(lol))
-                for t in lol[1]:
-                    self.logger.info('Lol t: {}'.format(t))
+        recent_keys = sorted(grouped_dict.keys())[-5:]
 
-            # all_recent_transfers = [ item for tmp in recent_transfers_groups for item in tmp[0] ]
-            # self.logger.info('Checking limits for: {}'.format(all_recent_transfers))
-            hit_limit = reduce(lambda x, y: x.amount + y.amount, all_recent_transfers)
-            self.logger.info(hit_limit)
+        # Find if days are consecutive
+        recent_dates = [datetime.strptime(d, '%Y-%m-%d') for d in recent_keys]
+        if recent_dates:
+            recent_dates.append(datetime.strptime(date, '%Y-%m-%d'))
+        else:
+            recent_dates = [datetime.strptime(date, '%Y-%m-%d')]
 
-            if hit_limit + amount <= self.money_limit:
-                return True
+        date_ints    = set([d.toordinal() for d in recent_dates])
+
+        print (date_ints)
+
+        if date_ints:
+            is_consecutive = (max(date_ints) - min(date_ints)) == (len(date_ints) - 1)
+        else:
+            is_consecutive = False
+
+        gained_limit = 0
+        for date, transfers in grouped_dict.items():
+            if date in limit_range_days:
+                self.logger.info(transfers)
+                for transfer in transfers:
+                    gained_limit += transfer.amount
+        self.logger.info('Gained limit: {}, is consecutive? {}'.format(gained_limit, is_consecutive))
+        allow_transfer = gained_limit + amount > self.money_limit and is_consecutive
+        self.logger.info('Do not allow transfer? {}'.format(allow_transfer))
+        if allow_transfer:
+            print ('do not allow')
             return False
-
+        print ('allow')
         return True
 
     def make_deposit(self, amount: float, date: str) -> dict:
@@ -71,7 +78,7 @@ class User:
     def make_transfer(self, amount: str, to_user, date: str) -> dict:
         if amount > self.balance:
             return {"method": "transfer", "status": "Fail", "result": f"{self.name} has insufficient funds to transfer {amount} EUR"}
-        if not self.is_transfer_within_limit(amount):
+        if not self.is_transfer_within_limit(amount, date):
             return {"method": "transfer", "status": "Fail", "result": f"{self.name} has hit allowed transfer limit"}
 
         self.make_withdrawal(amount, date)
