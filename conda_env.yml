@@ -1,0 +1,6 @@
+name: currencyProject
+dependencies:
+  - python=3.7
+  - pip:
+    - aiohttp
+    - aiojobs
