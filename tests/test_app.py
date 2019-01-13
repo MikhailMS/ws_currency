@@ -33,6 +33,11 @@ def test_app():
     expected = {"method": "withdrawal", "status": "Fail", "result": "bob has insufficient funds to withdraw 110 EUR"}
     asyncio.get_event_loop().run_until_complete(call_ws(data, expected))
 
+    # Invalid currency
+    data = {"method": "deposit", "date": "2018-10-09", "account": "bob", "amt" : 110, "ccy": "HUF"}
+    expected = {"error": "HUF currency is not supported at the moment"}
+    asyncio.get_event_loop().run_until_complete(call_ws(data, expected))
+
     # Invalid transfer(limit hit in 5 days)
     data = {"method": "deposit", "date": "2018-10-09", "account": "bob", "amt" : 15000, "ccy": "EUR"}
     asyncio.get_event_loop().run_until_complete(call_ws(data))

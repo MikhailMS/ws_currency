@@ -11,3 +11,9 @@ class Currency:
 
     def is_supported_currency(self, curr: str) -> bool:
         return curr in self.supported_currency
+
+    def convert_to_base(self, amount: float, curr: str) -> float:
+        if curr.upper() == self.base_currency:
+            return amount
+        ratio = float(self.rates[curr.upper()])
+        return round((amount / ratio), 3)

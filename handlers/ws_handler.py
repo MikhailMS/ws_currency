@@ -61,8 +61,14 @@ class Helpers():
         app.logger.info('User made deposit')
         user       = request['account']
         amount     = request['amt']
+        currency   = request['ccy']
         date       = request['date']
         user_class = app.users.get(user, None)
+
+        if app.currency_state.is_supported_currency(currency):
+            amount = app.currency_state.convert_to_base(amount, currency)
+        else:
+            return {"error": f"{currency.upper()} currency is not supported at the moment"}
 
         if user_class:
             return user_class.make_deposit(amount, date)
@@ -74,12 +80,17 @@ class Helpers():
 
     @staticmethod
     async def call_withdrawal(app, request: dict) -> dict:
-        # TODO
         app.logger.info('User requested withdrawal')
         user       = request['account']
         amount     = request['amt']
+        currency   = request['ccy']
         date       = request['date']
         user_class = app.users.get(user, None)
+
+        if app.currency_state.is_supported_currency(currency):
+            amount = app.currency_state.convert_to_base(amount, currency)
+        else:
+            return {"error": f"{currency.upper()} currency is not supported at the moment"}
 
         if user_class:
             return user_class.make_withdrawal(amount, date)
@@ -89,12 +100,17 @@ class Helpers():
 
     @staticmethod
     async def call_transfer(app, request: dict) -> dict:
-        # TODO
         app.logger.info('User requested transfer')
-        from_user       = request['from_account']
-        to_user         = request['to_account']
-        amount          = request['amt']
-        date            = request['date']
+        from_user = request['from_account']
+        to_user   = request['to_account']
+        amount    = request['amt']
+        currency  = request['ccy']
+        date      = request['date']
+
+        if app.currency_state.is_supported_currency(currency):
+            amount = app.currency_state.convert_to_base(amount, currency)
+        else:
+            return {"error": f"{currency.upper()} currency is not supported at the moment"}
 
         from_user_class = app.users.get(from_user, None)
         to_user_class   = app.users.get(to_user, None)
@@ -125,15 +141,3 @@ Helpers.supported_operations = {
     'transfer':    Helpers.call_transfer,
     'get_balances': Helpers.call_get_balance
 }
-
-# {"method": "deposit", "date": "2018-10-09", "account": "bob", "amt" : 100, "ccy": "EUR"}
-# {"method": "deposit", "date": "2018-10-09", "account": "alice", "amt" : 10, "ccy": "EUR"}
-
-# {"method": "withdrawal", "date": "2018-10-09", "account": "bob", "amt" : 10, "ccy": "EUR"}
-# {"method": "withdrawal", "date": "2018-10-09", "account": "alice", "amt" : 10, "ccy": "EUR"}
-
-# {"method": "transfer", "date": "2018-10-09", "to_account": "alice", "from_account": "bob", "amt" : 100, "ccy": "GBP"}
-# {"method": "transfer", "date": "2018-10-09", "to_account": "bob", "from_account": "alice", "amt" : 100, "ccy": "GBP"}
-
-# {"method": "get_balances", "date": "2018-10-09", "account": "bob"}
-# {"method": "get_balances", "date": "2018-10-09", "account": "bob"}
