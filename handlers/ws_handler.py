@@ -8,7 +8,7 @@ class Handler():
 
     ENDPOINT = '/bank'
 
-    @registry.register_get(ENDPOINT)
+    @registry.register_get(ENDPOINT, atomic = True)
     async def websocket_handler(request, app = None) -> WebSocketResponse:
         async def helper(app, msg):
             json_msg = msg.json()
@@ -37,7 +37,7 @@ class Handler():
 
 
             elif msg.type == WSMsgType.ERROR:
-                app.logger.info('WS connection closed with exception {}'.format(ws.exception()))
+                app.logger.info(f'WS connection closed with exception {ws.exception()}')
 
         app.logger.info('WS connection closed')
         return ws
@@ -50,7 +50,6 @@ class Helpers():
         async with ClientSession() as session:
             async with session.get('https://api.exchangeratesapi.io/latest') as resp:
                 json_response = await resp.json()
-                print (json_response)
 
                 date               = json_response['date']
                 rates              = json_response['rates']

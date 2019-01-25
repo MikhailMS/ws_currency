@@ -3,7 +3,7 @@ import logging
 from aiojobs.aiohttp import setup
 from aiohttp         import web
 
-from app     import App
+from app      import App
 from utils    import registry
 from handlers import WSHandler
 
